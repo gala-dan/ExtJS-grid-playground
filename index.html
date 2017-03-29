@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/extjs/6.0.0/classic/theme-classic/resources/theme-classic-all.css" rel="stylesheet" />
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/extjs/6.0.0/ext-all.js"></script>
+  <script type="text/javascript">
+
+  // var Grid1Store = new Ext.data.JsonStore({
+  //   fields: [ 'id', 'name', 'email' ],
+  //   autoLoad: true,
+  //   proxy:{
+  //     type:'ajax',
+  //     url:'users.json',
+  //     reader:{
+  //       root:'users'
+  //     }
+  //   }
+  // });
+
+  var connection = new WebSocket('ws://127.0.0.1:1337');
+  connection.onopen = function () {
+    console.log("connection opened");
+  };
+
+  connection.onerror = function (error) {
+    console.log("error: " + error);
+  };
+
+  connection.onmessage = function (message) {
+    console.log("message: " + message);
+    try {
+      if (message.data == "new") {
+        Grid1Store.add({ "id": 99, "name":"New User", "age":99, "email":"random@example.com"});
+        Grid1Store.commitChanges();
+      } else {
+        var json = JSON.parse(message.data);
+        console.log("message: " + json.message);
+      }
+    } catch (e) {
+      console.log('This doesn\'t look like a valid JSON: ', message.data);
+      return;
+    }
+    // handle incoming message
+  };
+
+  var Grid1Store = new Ext.data.JsonStore({
+    fields: [ 'id', 'name', 'email' ],
+    autoLoad: true,
+    remoteFilter: true,
+    remoteSort: true,
+    proxy:{
+      type:'rest',
+      url:'http://localhost:8081/listUsers',
+      reader:{
+        type: 'json',
+        root:'users'
+      }
+    }
+  });
+  // var Grid1Store = new Ext.data.JsonStore({
+  //   fields: [ 'id', 'name', 'email' ],
+  //   autoLoad: true,
+  //   data:  [
+  //     { "id": 1, "name":"John Smith", "email":"jsmith@example.com"},
+  //     { "id": 2, "name":"Anna Smith", "email":"asmith@example.com"},
+  //     { "id": 3, "name":"Peter Smith", "email":"psmith@example.com"},
+  //     { "id": 4, "name":"Tom Smith", "email":"tsmith@example.com"},
+  //     { "id": 5, "name":"Andy Smith", "email":"asmith@example.com"},
+  //     { "id": 6, "name":"Nick Smith", "email":"nsmith@example.com"}
+  //   ]
+  // });
+
+  var onReadyFunction = function() {
+    var grid = new Ext.grid.GridPanel({
+      renderTo: Ext.getBody(),
+      frame: true,
+      title: 'Users',
+      width:800,
+      store: Grid1Store,
+      listeners: {
+        // itemcontextmenu: function(grid, record, item, index, e) {
+        //   e.stopEvent();
+        //   contextMenu.showAt(e.getXY());
+        // }
+        cellcontextmenu: function(view, cell, columnIndex, record, row, rowIndex, e) {
+          e.stopEvent();
+          console.log("column index:" + columnIndex);
+          console.log(record);
+          console.log("row index:" + rowIndex);
+
+          var header = view.getHeaderByCell(cell).dataIndex;
+          if (header === 'email') {
+            otherContextMenu.showAt(e.getXY());
+          } else {
+            personalContextMenu.showAt(e.getXY());
+          }
+        }
+      },
+      columns: [
+        {
+          text: "Id",
+          dataIndex: 'id'
+        }, {
+          text: 'Personal',
+          columns: [{
+            text: "Name",
+            dataIndex: 'name'
+          }, {
+            text: "Age",
+            dataIndex: 'age'
+          }
+        ]},
+        {
+          text: 'Other',
+          columns: [{
+            text: "Email",
+            dataIndex: 'email'
+          }]
+        }
+      ]
+    });
+
+    var personalContextMenu = Ext.create('Ext.menu.Menu', {
+      width: 200,
+      items: [{
+        text: 'Personal',
+        handler: function() {
+          handleClick(grid);
+        }
+      }]
+    });
+
+    var otherContextMenu = Ext.create('Ext.menu.Menu', {
+      width: 200,
+      items: [{
+        text: 'Other',
+        handler: function() {
+          handleClick(grid);
+        }
+      }]
+    });
+  }
+
+  var handleClick = function(grid) {
+    var record = grid ? grid.getSelection()[0] : null;
+    if (!record) {
+      return;
+    }
+
+    var json = JSON.stringify({ message: 'yo!' });
+    connection.send(json);
+
+    console.log(record);
+  }
+
+  Ext.onReady(onReadyFunction);
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>
