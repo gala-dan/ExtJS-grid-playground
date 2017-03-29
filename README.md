@@ -5,7 +5,9 @@ index.html contains a simple ExtJS grid, which is populated via a store. The sto
 
 The node server also exposes a websocket that the client connects to to simulate updates to the underlying data. Updates are triggered by calling the "addRandomUser" rest endpoint, which will send a message to the client, which will add a new record to the store (obviously in the real world the server would send the new record, but this is very early stages).
 
-Note: I just browse to index.html from the file system. Chrome doesn't like this so I open a new instance with:
+Notes: 
+1. I just browse to index.html from the file system. Chrome doesn't like this so I open a new instance with:
     * chrome.exe --user-data-dir="C:/Chrome dev session" --disable-web-security
+2. To send a put request to the node server (addRandomUser) I use the Advanced REST client Chrome extension.
     
 I'd advise against copying the code as it's extremely rough and fragile. Hosting it in github allows me to evolve it without losing a working copy. I'm too cheap to pay for a private repo!
